@@ -1,6 +1,6 @@
 /target/
 !.mvn/wrapper/maven-wrapper.jar
-/output/*.xml
+/output/
 
 ### STS ###
 .apt_generated
