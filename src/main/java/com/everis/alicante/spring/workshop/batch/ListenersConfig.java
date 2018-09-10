@@ -21,24 +21,6 @@ public class ListenersConfig {
   private static final Log logger = LogFactory.getLog(ListenersConfig.class);
 
   @Bean
-  public StepExecutionListener stepExecutionListener(){
-    return new StepExecutionListener(){
-
-      @Override
-      public void beforeStep(StepExecution stepExecution) {
-        logger.info(String.format("StepExecutionListener - beforeStep Status: %s", stepExecution.getStatus()));
-      }
-
-      @Override
-      public ExitStatus afterStep(StepExecution stepExecution) {
-        logger.info(String.format("StepExecutionListener - afterStep Status: %s", stepExecution.getStatus()));
-        return stepExecution.getExitStatus();
-      }
-
-    };
-  }
-
-  @Bean
   public ItemReadListener<Transferencia> itemReadListener() {
     return new ItemReadListener<Transferencia>() {
       @Override
@@ -57,20 +39,39 @@ public class ListenersConfig {
   }
 
   @Bean
-  public ItemWriteListener<TransferenciaXML> itemWriteListener() {
+  public ItemWriteListener<TransferenciaXML> itemWriteTransferenciaXMLListener() {
     return new ItemWriteListener<TransferenciaXML>() {
       @Override
       public void beforeWrite(List<? extends TransferenciaXML> list) { }
 
       @Override
       public void afterWrite(List<? extends TransferenciaXML> list) {
-        logger.info("ItemWriteListener - afterWrite: "+list.stream().map(TransferenciaXML::getBeneficiario).collect(
+        logger.info("ItemWriteListener<TrasnferenciaXML> - afterWrite: "+list.stream().map(TransferenciaXML::getBeneficiario).collect(
           Collectors.joining(", ")));
       }
 
       @Override
       public void onWriteError(Exception e, List<? extends TransferenciaXML> list) {
-        logger.error("ItemWriteListener - onWriteError", e);
+        logger.error("ItemWriteListener<TrasnferenciaXML> - onWriteError", e);
+      }
+    };
+  }
+
+  @Bean
+  public ItemWriteListener<Transferencia> itemWriteTransferenciaListener() {
+    return new ItemWriteListener<Transferencia>() {
+      @Override
+      public void beforeWrite(List<? extends Transferencia> list) { }
+
+      @Override
+      public void afterWrite(List<? extends Transferencia> list) {
+        logger.info("ItemWriteListener<Trasnferencia> - afterWrite: "+list.stream().map(Transferencia::getBeneficiario).collect(
+          Collectors.joining(", ")));
+      }
+
+      @Override
+      public void onWriteError(Exception e, List<? extends Transferencia> list) {
+        logger.error("ItemWriteListener<Trasnferencia> - onWriteError", e);
       }
     };
   }
