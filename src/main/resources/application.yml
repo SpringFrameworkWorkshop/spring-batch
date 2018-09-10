@@ -6,7 +6,8 @@ spring:
     password:
     initialization-mode: always
   batch:
-    initialize-schema: never
-
+    initialize-schema: always
+    job:
+      enabled: false
 
 
