@@ -4,8 +4,11 @@ import com.everis.alicante.spring.workshop.batch.model.Transferencia;
 import com.everis.alicante.spring.workshop.batch.model.TransferenciaXML;
 import org.apache.commons.logging.Log;
 import org.apache.commons.logging.LogFactory;
+import org.springframework.batch.core.ItemReadListener;
+import org.springframework.batch.core.ItemWriteListener;
 import org.springframework.batch.core.Job;
 import org.springframework.batch.core.Step;
+import org.springframework.batch.core.StepExecutionListener;
 import org.springframework.batch.core.configuration.annotation.JobBuilderFactory;
 import org.springframework.batch.core.configuration.annotation.StepBuilderFactory;
 import org.springframework.batch.item.ItemProcessor;
@@ -41,6 +44,7 @@ public class JobConfig {
       .targetType(Transferencia.class)
       .linesToSkip(1)
       .delimited().delimiter(";").names(new String[]{"beneficiario", "fecha", "importe", "concepto"})
+
       .build();
   }
 
@@ -70,12 +74,17 @@ public class JobConfig {
 
   @Bean
   public Step csvToXmlStep(StepBuilderFactory stepBuilderFactory, FlatFileItemReader<Transferencia> reader,
-    ItemProcessor<Transferencia,TransferenciaXML> processor, StaxEventItemWriter<TransferenciaXML> writer) {
+    ItemProcessor<Transferencia,TransferenciaXML> processor, StaxEventItemWriter<TransferenciaXML> writer,
+    StepExecutionListener stepExecutionListener, ItemReadListener<Transferencia> itemReadListener,
+    ItemWriteListener<TransferenciaXML> itemWriteListener) {
     return stepBuilderFactory.get("csvToXmlStep")
       .<Transferencia, TransferenciaXML>chunk(10)
       .reader(reader)
       .processor(processor)
       .writer(writer)
+      .listener(itemReadListener)
+      .listener(itemWriteListener)
+      .listener(stepExecutionListener)
       .build();
   }
 
