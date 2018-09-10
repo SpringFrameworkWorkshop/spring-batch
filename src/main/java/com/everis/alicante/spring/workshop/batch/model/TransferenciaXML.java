@@ -9,7 +9,7 @@ import java.util.Date;
 @XmlRootElement(name = "transferencia")
 public class TransferenciaXML {
   private String beneficiario;
-  private String fechaEspanola;
+  private Date fecha;
   private Double importeDolares;
   private String concepto;
 }

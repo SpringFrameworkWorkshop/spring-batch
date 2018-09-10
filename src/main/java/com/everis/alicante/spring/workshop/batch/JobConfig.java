@@ -20,6 +20,8 @@ import org.springframework.batch.item.file.builder.FlatFileItemReaderBuilder;
 import org.springframework.batch.item.file.mapping.BeanWrapperFieldSetMapper;
 import org.springframework.batch.item.file.transform.DefaultFieldSetFactory;
 import org.springframework.batch.item.file.transform.FieldSetFactory;
+import org.springframework.batch.item.support.CompositeItemWriter;
+import org.springframework.batch.item.support.builder.CompositeItemWriterBuilder;
 import org.springframework.batch.item.xml.StaxEventItemWriter;
 import org.springframework.batch.item.xml.builder.StaxEventItemWriterBuilder;
 import org.springframework.batch.repeat.RepeatStatus;
@@ -35,6 +37,7 @@ import javax.sql.DataSource;
 import java.beans.PropertyEditor;
 import java.text.DateFormat;
 import java.text.SimpleDateFormat;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -57,23 +60,23 @@ public class JobConfig {
   }
 
   @Bean
-  public ItemProcessor<Transferencia, TransferenciaXML> processor(DateFormat sdfEspanol, Double cambioEuroDollar) {
+  public ItemProcessor<Transferencia, TransferenciaXML> processor(Double cambioEuroDollar) {
     return transferencia -> {
       final TransferenciaXML xml = new TransferenciaXML();
       xml.setBeneficiario(transferencia.getBeneficiario());
       xml.setConcepto(transferencia.getConcepto());
-      xml.setFechaEspanola(sdfEspanol.format(transferencia.getFecha()));
+      xml.setFecha(transferencia.getFecha());
       xml.setImporteDolares(transferencia.getImporte() * cambioEuroDollar);
       return xml;
     };
   }
 
   @Bean
-  public StaxEventItemWriter<TransferenciaXML> writer(@Value("file:output/data.xml") Resource output) {
+  public StaxEventItemWriter<TransferenciaXML> xmlWriter(@Value("file:output/data.xml") Resource output) {
     final Jaxb2Marshaller marshaller = new Jaxb2Marshaller();
     marshaller.setClassesToBeBound(TransferenciaXML.class);
     return new StaxEventItemWriterBuilder<TransferenciaXML>()
-      .name("writer")
+      .name("xmlWriter")
       .rootTagName("transferencias")
       .resource(output)
       .marshaller(marshaller)
@@ -81,12 +84,18 @@ public class JobConfig {
   }
 
   @Bean
-  public JdbcBatchItemWriter<Transferencia> jdbcBatchItemWriter(DataSource dataSource) {
-    return new JdbcBatchItemWriterBuilder<Transferencia>()
+  public JdbcBatchItemWriter<TransferenciaXML> jdbcBatchItemWriter(DataSource dataSource) {
+    return new JdbcBatchItemWriterBuilder<TransferenciaXML>()
       .dataSource(dataSource)
-      .sql("insert into transferencias (beneficiario, fecha, importe, concepto) values (:beneficiario, :fecha, :importe, :concepto)")
+      .sql("insert into transferencias (beneficiario, fecha, importe, concepto) values (:beneficiario, :fecha, :importeDolares, :concepto)")
       .beanMapped()
       .build();
+  }
+
+  @Bean
+  public CompositeItemWriter<TransferenciaXML> compositeItemWriter(StaxEventItemWriter<TransferenciaXML> xmlWriter,
+    JdbcBatchItemWriter<TransferenciaXML> jdbcBatchItemWriter){
+    return new CompositeItemWriterBuilder<TransferenciaXML>().delegates(Arrays.asList(xmlWriter, jdbcBatchItemWriter)).build();
   }
 
   @Bean
@@ -121,7 +130,6 @@ public class JobConfig {
     return jobBuilderFactory.get("csvToXmlJob")
       .incrementer(new RunIdIncrementer())
       .start(csvToXmlStep)
-      .next(csvToDatabaseStep)
       .build();
   }
 
